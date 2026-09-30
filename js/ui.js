@@ -1,45 +1,122 @@
-// ui.js - Manejo de la interfaz, cambio de TPs y reinicio
+// ui.js - Lector de Google Sheet publicado como CSV en tiempo real
 
-// Evento que se dispara cuando los datos de Google Sheets / CSV terminan de cargar
-document.addEventListener("datosTPsCargados", function() {
-  window.cargarDesplegableTPs();
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS3jIdoBOGDyAPfT33sIgZ3jVHSawHEUwUbyKcbdwH26Nfq0GmnZNtidsNeYQklJP70hVF3t2x7qgui/pub?gid=1154233885&single=true&output=csv";
+
+document.addEventListener("DOMContentLoaded", function() {
+  cargarDatosDesdeSheet();
 });
 
-// Función para poblar el menú desplegable con los TPs disponibles
-window.cargarDesplegableTPs = function() {
-  const selectTP = document.getElementById("select-tp");
+// Parsea filas respetando comillas y comas internas
+function parsearLineaCSV(texto) {
+  const resultado = [];
+  let celda = '';
+  let enComillas = false;
+  
+  for (let i = 0; i < texto.length; i++) {
+    const c = texto[i];
+    if (c === '"') {
+      if (enComillas && texto[i + 1] === '"') {
+        celda += '"';
+        i++;
+      } else {
+        enComillas = !enComillas;
+      }
+    } else if (c === ',' && !enComillas) {
+      resultado.push(celda.trim());
+      celda = '';
+    } else {
+      celda += c;
+    }
+  }
+  resultado.push(celda.trim());
+  return resultado;
+}
+
+async function cargarDatosDesdeSheet() {
+  try {
+    const respuesta = await fetch(CSV_URL);
+    if (!respuesta.ok) throw new Error("Error al obtener la planilla pública");
+
+    const texto = await respuesta.text();
+    const lineas = texto.split(/\r?\n/);
+    const tpsMap = {};
+
+    lineas.forEach((linea, index) => {
+      if (!linea.trim()) return;
+      
+      const c = parsearLineaCSV(linea);
+      
+      // Mapeo según la estructura de columnas de tu planilla
+      const unidad = c[0] || "U1";
+      const tpNum = c[1] || "001";
+      const tipo = c[2] || "OM";
+      const mostrarAyuda = c[3] || "NO";
+      const consigna = c[4] || "";
+      const textoOpciones = c[5] || "";
+      const correctaTexto = c[6] || "";
+
+      // Evita los encabezados de la tabla
+      if (!consigna || index === 0 || consigna.toLowerCase() === "consigna") return;
+
+      const tpClave = `TP_${unidad}_${tpNum}`;
+
+      if (!tpsMap[tpClave]) {
+        tpsMap[tpClave] = {
+          titulo: `TP ${tpNum} (${unidad}): Matemática - Prof. Llenolio`,
+          subtitulo: `1° Año Técnica — ${unidad} TP ${tpNum}`,
+          tipo: tipo,
+          preguntas: []
+        };
+      }
+
+      const opciones = textoOpciones
+        .split(',,,')
+        .map(o => o.trim())
+        .filter(o => o.length > 0);
+
+      let idxCorrecta = opciones.findIndex(op => op.toLowerCase() === correctaTexto.toLowerCase());
+      if (idxCorrecta === -1) idxCorrecta = 0;
+
+      tpsMap[tpClave].preguntas.push({
+        consigna: consigna,
+        opciones: opciones,
+        correcta: idxCorrecta,
+        mostrarAyuda: mostrarAyuda.toUpperCase() === "SI"
+      });
+    });
+
+    window.TP_DATOS_TECNICA_1 = { tps: tpsMap };
+    poblarDesplegableTPs(tpsMap);
+
+  } catch (err) {
+    console.error("Error al cargar Google Sheet:", err);
+  }
+}
+
+function poblarDesplegableTPs(tps) {
+  const selectTP = document.getElementById("select-tp") || document.querySelectorAll("select")[2];
   if (!selectTP) return;
 
   selectTP.innerHTML = '<option value="">-- Seleccionar TP o Examen --</option>';
 
-  const tps = window.TP_DATOS_TECNICA_1 ? window.TP_DATOS_TECNICA_1.tps : {};
-  const claves = Object.keys(tps);
-
-  if (claves.length === 0) {
-    selectTP.innerHTML = '<option value="">No hay TPs disponibles</option>';
-    return;
-  }
-
-  claves.forEach(clave => {
+  Object.keys(tps).forEach(clave => {
     const option = document.createElement("option");
     option.value = clave;
     option.textContent = tps[clave].titulo;
     selectTP.appendChild(option);
   });
 
-  // Si no hay evento change asignado previamente, se asigna
   selectTP.onchange = function() {
-    const tpClaveSeleccionada = this.value;
-    if (tpClaveSeleccionada && tps[tpClaveSeleccionada]) {
-      window.cargarTP(tpClaveSeleccionada);
+    const clave = this.value;
+    if (clave && tps[clave]) {
+      window.cargarTP(clave);
     }
   };
-};
+}
 
-// Función para cargar las preguntas del TP seleccionado
 window.cargarTP = function(clave) {
   if (typeof window.reiniciarEvaluacion === "function") {
-    window.reiniciarEvaluacion(); // Resetea vidas, puntaje y estado previo
+    window.reiniciarEvaluacion();
   }
 
   const tpData = window.TP_DATOS_TECNICA_1.tps[clave];
@@ -49,28 +126,7 @@ window.cargarTP = function(clave) {
   window.preguntasActuales = tpData.preguntas;
   window.preguntaIndiceActual = 0;
 
-  // Actualizar títulos en la interfaz
-  const elementoTitulo = document.getElementById("tp-titulo");
-  if (elementoTitulo) elementoTitulo.textContent = tpData.titulo;
-
-  // Mostrar la primera pregunta
   if (typeof window.renderizarPregunta === "function") {
     window.renderizarPregunta(0);
   }
 };
-
-// Asignación del botón Reiniciar
-document.addEventListener("DOMContentLoaded", function() {
-  const btnReiniciar = document.getElementById("btn-reiniciar");
-  if (btnReiniciar) {
-    btnReiniciar.addEventListener("click", function() {
-      if (window.tpClaveActual) {
-        window.cargarTP(window.tpClaveActual);
-      } else {
-        if (typeof window.reiniciarEvaluacion === "function") {
-          window.reiniciarEvaluacion();
-        }
-      }
-    });
-  }
-});
