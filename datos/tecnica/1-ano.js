@@ -5,30 +5,60 @@ window.TP_DATOS_TECNICA_1 = {
   tps: {}
 };
 
-function solicitarDatosGoogleSheets() {
-  const script = document.createElement('script');
-  script.src = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS3jIdoBOGDyAPfT33sIgZ3jVHSawHEUwUbyKcbdwH26Nfq0GmnZNtidsNeYQklJP70hVF3t2x7qgui/gviz/tq?gid=1154233885&tqx=responseHandler:procesarRespuestaSheet";
-  document.head.appendChild(script);
+// URL CSV de tu Google Sheet publicada
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS3jIdoBOGDyAPfT33sIgZ3jVHSawHEUwUbyKcbdwH26Nfq0GmnZNtidsNeYQklJP70hVF3t2x7qgui/pub?gid=1154233885&single=true&output=csv";
+
+// Función para parsear correctamente filas CSV respetando comillas
+function parseCSVLine(text) {
+  const result = [];
+  let cell = '';
+  let inQuotes = false;
+  
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"') {
+      if (inQuotes && text[i + 1] === '"') {
+        cell += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (c === ',' && !inQuotes) {
+      result.push(cell.trim());
+      cell = '';
+    } else {
+      cell += c;
+    }
+  }
+  result.push(cell.trim());
+  return result;
 }
 
-window.procesarRespuestaSheet = function(datos) {
+async function cargarDatosDesdeCSV() {
   try {
-    const filas = datos.table.rows;
+    const respuesta = await fetch(CSV_URL);
+    if (!respuesta.ok) throw new Error("No se pudo obtener el archivo CSV");
+    
+    const textoCompleto = await respuesta.text();
+    const lineas = textoCompleto.split(/\r?\n/);
     const tpsMap = {};
 
-    filas.forEach((fila) => {
-      const c = fila.c;
-      if (!c) return;
+    lineas.forEach((linea, index) => {
+      if (!linea.trim()) return;
+      
+      const c = parseCSVLine(linea);
+      
+      // Mapeo de columnas según tu planilla
+      const unidad = c[0] || "U1";
+      const tpNum = c[1] || "001";
+      const tipo = c[2] || "OM";
+      const mostrarAyuda = c[3] || "NO";
+      const consigna = c[4] || "";
+      const textoOpciones = c[5] || "";
+      const correctaTexto = c[6] || "";
 
-      const unidad = c[0] && c[0].v ? String(c[0].v).trim() : "U1";
-      const tpNum = c[1] && c[1].v ? String(c[1].v).trim() : "001";
-      const tipo = c[2] && c[2].v ? String(c[2].v).trim() : "OM";
-      const mostrarAyuda = c[3] && c[3].v ? String(c[3].v).trim() : "NO";
-      const consigna = c[4] && c[4].v ? String(c[4].v).trim() : "";
-      const textoOpciones = c[5] && c[5].v ? String(c[5].v).trim() : "";
-      const correctaTexto = c[6] && c[6].v ? String(c[6].v).trim() : "";
-
-      if (!consigna) return;
+      // Saltear encabezados si la consigna es el título de la columna o está vacía
+      if (!consigna || consigna.toLowerCase() === "consigna" || index === 0) return;
 
       const tpClave = `TP_${unidad}_${tpNum}`;
 
@@ -59,15 +89,15 @@ window.procesarRespuestaSheet = function(datos) {
 
     window.TP_DATOS_TECNICA_1.tps = tpsMap;
     
-    // Disparar evento y ejecutar actualización directa de la interfaz
+    // Notificar a la interfaz que los datos están listos
     document.dispatchEvent(new Event("datosTPsCargados"));
     if (typeof window.cargarDesplegableTPs === 'function') {
       window.cargarDesplegableTPs();
     }
   } catch (err) {
-    console.error("Error cargando los TPs reales:", err);
+    console.error("Error cargando los TPs desde el CSV:", err);
   }
-};
+}
 
-// Iniciar carga al terminar de leer el archivo
-solicitarDatosGoogleSheets();
+// Ejecutar la carga
+cargarDatosDesdeCSV();
