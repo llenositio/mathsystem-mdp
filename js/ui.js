@@ -1,4 +1,4 @@
-// ui.js - Sincronización completa con Google Sheets CSV
+// ui.js - Carga directa e inicialización garantizada de TPs
 
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS3jIdoBOGDyAPfT33sIgZ3jVHSawHEUwUbyKcbdwH26Nfq0GmnZNtidsNeYQklJP70hVF3t2x7qgui/pub?gid=1154233885&single=true&output=csv";
 
@@ -34,7 +34,7 @@ function parsearLineaCSV(texto) {
 async function cargarDatosDesdeSheet() {
   try {
     const respuesta = await fetch(CSV_URL);
-    if (!respuesta.ok) throw new Error("Error al obtener la planilla");
+    if (!respuesta.ok) throw new Error("Error al consultar la planilla");
 
     const texto = await respuesta.text();
     const lineas = texto.split(/\r?\n/);
@@ -59,7 +59,7 @@ async function cargarDatosDesdeSheet() {
 
       if (!tpsMap[tpClave]) {
         tpsMap[tpClave] = {
-          titulo: `TP ${tpNum} (${unidad}): Matemática - Prof. Llenolio`,
+          titulo: `TP Nº ${tpNum} - ${unidad}`,
           subtitulo: `Escuela: ET24DE17 - Curso: 1º 1`,
           tipo: tipo,
           preguntas: []
@@ -85,27 +85,40 @@ async function cargarDatosDesdeSheet() {
     window.TP_DATOS_TECNICA_1 = { tps: tpsMap };
     poblarDesplegableTPs(tpsMap);
 
+    // Auto-cargar el primer TP disponible para remover el mensaje de "Cargando datos..."
+    const primerasClaves = Object.keys(tpsMap);
+    if (primerasClaves.length > 0) {
+      window.cargarTP(primerasClaves[0]);
+    }
+
   } catch (err) {
-    console.error("Error al cargar Google Sheet:", err);
+    console.error("Error al cargar datos:", err);
   }
 }
 
 function poblarDesplegableTPs(tps) {
-  // Busca cualquier select desplegable disponible en la sección de selección
   const selects = document.querySelectorAll("select");
-  const selectTP = selects.length >= 3 ? selects[2] : document.getElementById("select-tp");
-  
+  let selectTP = null;
+
+  // Buscar el tercer select o el marcado como TP
+  if (selects.length >= 3) {
+    selectTP = selects[2];
+  } else {
+    selectTP = document.getElementById("select-tp") || selects[selects.length - 1];
+  }
+
   if (!selectTP) return;
 
-  selectTP.innerHTML = '<option value="">-- Seleccionar TP o Examen --</option>';
+  selectTP.innerHTML = '';
 
   Object.keys(tps).forEach(clave => {
     const option = document.createElement("option");
     option.value = clave;
-    option.textContent = tps[clave].titulo;
+    option.textContent = tps[clave].titulo + " (Matemática - Prof. Llenolio)";
     selectTP.appendChild(option);
   });
 
+  // Listener para cambiar de TP inmediatamente
   selectTP.onchange = function() {
     const clave = this.value;
     if (clave && tps[clave]) {
