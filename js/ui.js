@@ -1,4 +1,4 @@
-// ui.js - Lector de Google Sheet publicado como CSV en tiempo real
+// ui.js - Sincronización completa con Google Sheets CSV
 
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS3jIdoBOGDyAPfT33sIgZ3jVHSawHEUwUbyKcbdwH26Nfq0GmnZNtidsNeYQklJP70hVF3t2x7qgui/pub?gid=1154233885&single=true&output=csv";
 
@@ -6,7 +6,6 @@ document.addEventListener("DOMContentLoaded", function() {
   cargarDatosDesdeSheet();
 });
 
-// Parsea filas respetando comillas y comas internas
 function parsearLineaCSV(texto) {
   const resultado = [];
   let celda = '';
@@ -35,7 +34,7 @@ function parsearLineaCSV(texto) {
 async function cargarDatosDesdeSheet() {
   try {
     const respuesta = await fetch(CSV_URL);
-    if (!respuesta.ok) throw new Error("Error al obtener la planilla pública");
+    if (!respuesta.ok) throw new Error("Error al obtener la planilla");
 
     const texto = await respuesta.text();
     const lineas = texto.split(/\r?\n/);
@@ -46,7 +45,6 @@ async function cargarDatosDesdeSheet() {
       
       const c = parsearLineaCSV(linea);
       
-      // Mapeo según la estructura de columnas de tu planilla
       const unidad = c[0] || "U1";
       const tpNum = c[1] || "001";
       const tipo = c[2] || "OM";
@@ -55,7 +53,6 @@ async function cargarDatosDesdeSheet() {
       const textoOpciones = c[5] || "";
       const correctaTexto = c[6] || "";
 
-      // Evita los encabezados de la tabla
       if (!consigna || index === 0 || consigna.toLowerCase() === "consigna") return;
 
       const tpClave = `TP_${unidad}_${tpNum}`;
@@ -63,7 +60,7 @@ async function cargarDatosDesdeSheet() {
       if (!tpsMap[tpClave]) {
         tpsMap[tpClave] = {
           titulo: `TP ${tpNum} (${unidad}): Matemática - Prof. Llenolio`,
-          subtitulo: `1° Año Técnica — ${unidad} TP ${tpNum}`,
+          subtitulo: `Escuela: ET24DE17 - Curso: 1º 1`,
           tipo: tipo,
           preguntas: []
         };
@@ -94,7 +91,10 @@ async function cargarDatosDesdeSheet() {
 }
 
 function poblarDesplegableTPs(tps) {
-  const selectTP = document.getElementById("select-tp") || document.querySelectorAll("select")[2];
+  // Busca cualquier select desplegable disponible en la sección de selección
+  const selects = document.querySelectorAll("select");
+  const selectTP = selects.length >= 3 ? selects[2] : document.getElementById("select-tp");
+  
   if (!selectTP) return;
 
   selectTP.innerHTML = '<option value="">-- Seleccionar TP o Examen --</option>';
@@ -115,16 +115,14 @@ function poblarDesplegableTPs(tps) {
 }
 
 window.cargarTP = function(clave) {
-  if (typeof window.reiniciarEvaluacion === "function") {
-    window.reiniciarEvaluacion();
-  }
+  if (!window.TP_DATOS_TECNICA_1 || !window.TP_DATOS_TECNICA_1.tps[clave]) return;
 
   const tpData = window.TP_DATOS_TECNICA_1.tps[clave];
-  if (!tpData) return;
 
   window.tpClaveActual = clave;
   window.preguntasActuales = tpData.preguntas;
   window.preguntaIndiceActual = 0;
+  window.aciertos = 0;
 
   if (typeof window.renderizarPregunta === "function") {
     window.renderizarPregunta(0);
