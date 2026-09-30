@@ -1,20 +1,18 @@
-// evaluacion.js - Lógica de preguntas, vidas y reinicio
+// evaluacion.js - Lógica de preguntas OM (sin sistema de vidas)
 
-window.vidas = 3;
-window.notaFinalCalculada = 10;
 window.aciertos = 0;
+window.preguntaIndiceActual = 0;
 
 window.reiniciarEvaluacion = function() {
-  window.vidas = 3;
   window.aciertos = 0;
   window.preguntaIndiceActual = 0;
   
+  // Ocultar contador de vidas si existe en el HTML
   const contVidas = document.querySelector(".badge, #vidas-count, [class*='Vidas']");
-  if (contVidas) contVidas.textContent = "Vidas: 3/3";
-  
-  const tituloTP = document.getElementById("tp-titulo");
-  if (tituloTP && window.tpClaveActual && window.TP_DATOS_TECNICA_1.tps[window.tpClaveActual]) {
-    tituloTP.textContent = window.TP_DATOS_TECNICA_1.tps[window.tpClaveActual].titulo;
+  if (contVidas) contVidas.style.display = "none";
+
+  if (window.preguntasActuales && window.preguntasActuales.length > 0) {
+    window.renderizarPregunta(0);
   }
 };
 
@@ -23,13 +21,13 @@ window.renderizarPregunta = function(indice) {
   
   const pregunta = window.preguntasActuales[indice];
   
-  // Ocultar mensaje de carga y mostrar contenedor de pregunta
+  // Actualizar consigna
   const tituloTP = document.getElementById("tp-titulo") || document.querySelector("h3, .card-title");
   if (tituloTP) {
     tituloTP.textContent = pregunta.consigna;
   }
   
-  // Buscar o crear contenedor de opciones
+  // Buscar o crear el contenedor de las opciones
   let contenedorOpciones = document.getElementById("opciones-container");
   if (!contenedorOpciones) {
     const cardBody = document.querySelector(".card-body") || document.querySelector("main") || document.body;
@@ -57,22 +55,13 @@ window.verificarRespuesta = function(seleccionada, correcta) {
     alert("¡Correcto!");
     window.aciertos++;
     window.preguntaIndiceActual++;
+    
     if (window.preguntaIndiceActual < window.preguntasActuales.length) {
       window.renderizarPregunta(window.preguntaIndiceActual);
     } else {
-      alert("¡Has completado el TP exitosamente!");
+      alert(`¡Has completado el TP! Aciertos: ${window.aciertos} de ${window.preguntasActuales.length}`);
     }
   } else {
-    window.vidas--;
-    const contVidas = document.querySelector(".badge, #vidas-count, [class*='Vidas']");
-    if (contVidas) contVidas.textContent = `Vidas: ${window.vidas}/3`;
-    
-    if (window.vidas <= 0) {
-      alert("Te quedaste sin vidas. Inténtalo de nuevo.");
-      window.reiniciarEvaluacion();
-      if (window.preguntasActuales) window.renderizarPregunta(0);
-    } else {
-      alert("Respuesta incorrecta. ¡Intenta con otra opción!");
-    }
+    alert("Respuesta incorrecta. Volvé a intentarlo.");
   }
 };
