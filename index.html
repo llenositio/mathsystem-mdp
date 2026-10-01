@@ -1,10 +1,17 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
   <base target="_top">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <?!= HtmlService.createHtmlOutputFromFile('MathConfig').getContent(); ?>
-  <?!= HtmlService.createHtmlOutputFromFile('CSS').getContent(); ?>
+  <title>Aula Virtual</title>
+
+  <!-- Hoja de Estilos Principal -->
+  <link rel="stylesheet" href="CSS.css">
+
+  <!-- Configuración e Importación de MathJax para Fórmulas Matemáticas -->
+  <script src="MathConfig.js"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
 
@@ -83,11 +90,6 @@
   </div>
 </div>
 
-<!-- INYECCIÓN SEGURA DEL ID DESDE EL SERVIDOR -->
-<script>
-  var idTemporal = "<?= typeof idTemporal !== 'undefined' ? idTemporal : (typeof id !== 'undefined' ? id : '') ?>";
-</script>
-
 <!-- RASTREADOR DE CAMBIO DE PESTAÑA Y PANTALLA DIVIDIDA (FOCUS/BLUR) -->
 <script>
   window.contadorFugas = 0;
@@ -138,26 +140,25 @@
   }
 </script>
 
-<!-- INCLUSIÓN DE LOS ARCHIVOS JAVASCRIPT (EN ORDEN CORRECTO) -->
-<?!= HtmlService.createHtmlOutputFromFile('JS_Utilidades').getContent(); ?>
-<?!= HtmlService.createHtmlOutputFromFile('Especialista_VF').getContent(); ?>
-<?!= HtmlService.createHtmlOutputFromFile('Especialista_OM').getContent(); ?>
-<?!= HtmlService.createHtmlOutputFromFile('Especialista_CA').getContent(); ?>
-<?!= HtmlService.createHtmlOutputFromFile('Especialista_BALANZA').getContent(); ?>
-<?!= HtmlService.createHtmlOutputFromFile('Especialista_RM').getContent(); ?>
-<?!= HtmlService.createHtmlOutputFromFile('Especialista_VI').getContent(); ?>
-<?!= HtmlService.createHtmlOutputFromFile('Especialista_CV').getContent(); ?>
-<?!= HtmlService.createHtmlOutputFromFile('Especialista_EM').getContent(); ?>
-<?!= HtmlService.createHtmlOutputFromFile('Especialista_PC1').getContent(); ?>
-<?!= HtmlService.createHtmlOutputFromFile('Especialista_FR1').getContent(); ?>
-<?!= HtmlService.createHtmlOutputFromFile('Especialista_EXAMEN').getContent(); ?>
+<!-- INCLUSIÓN DE LOS ARCHIVOS JAVASCRIPT Y ESPECIALISTAS EN ORDEN -->
+<script src="JS_Utilidades.js"></script>
 
-<!-- Mantener al Render antes que a Logica, pr el orden de construccion de las tarjetas -->
-<?!= HtmlService.createHtmlOutputFromFile('JS_Render').getContent(); ?>
-<?!= HtmlService.createHtmlOutputFromFile('JS_Logica').getContent(); ?>
+<script src="Especialista_VF.js"></script>
+<script src="Especialista_OM.js"></script>
+<script src="Especialista_CA.js"></script>
+<script src="Especialista_Balanza.js"></script>
+<script src="Especialista_RM.js"></script>
+<script src="Especialista_VI.js"></script>
+<script src="Especialista_CV.js"></script>
+<script src="Especialista_EM.js"></script>
+<script src="Especialista_PC1.js"></script>
+<script src="Especialista_FR1.js"></script>
+<script src="Especialista_Examen.js"></script>
 
-<?!= HtmlService.createHtmlOutputFromFile('JS_TutorIA').getContent(); ?>
-<?!= HtmlService.createHtmlOutputFromFile('JS_Core').getContent(); ?>
+<script src="JS_Render.js"></script>
+<script src="JS_Logica.js"></script>
+<script src="JS_TutorIA.js"></script>
+<script src="JS_Core.js"></script>
 
 </body>
 </html>
