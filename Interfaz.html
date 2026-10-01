@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <?!= HtmlService.createHtmlOutputFromFile('MathConfig').getContent(); ?>
+  <?!= HtmlService.createHtmlOutputFromFile('CSS').getContent(); ?>
+</head>
+<body>
+
+<div class="card">
+  <!-- Encabezado integrado -->
+  <div class="header-tp">
+    <h2 id="tituloTP">Cargando...</h2>
+    <h3 id="infoExtra"></h3>
+    <h4 id="alumnoHeader" style="color: #1a73e8; margin-top: 6px; font-weight: 700; font-size: 1.05rem; display: none;"></h4>
+  </div>
+
+  <!-- Banner del Aula Virtual -->
+  <div style="text-align:center; margin-bottom: 20px; margin-top: 15px;">
+    <img src="https://drive.google.com/thumbnail?id=15xiuAUaXGCpmO9-55_sv5W013mhFdNBC&sz=w1000"
+         style="width: 100%; max-width: 700px; height: auto; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+  </div>
+
+  <!-- Paso 1: Selección de Alumno -->
+  <div id="paso1">
+    <p style="text-align:center; font-weight:bold;">Seleccioná tu nombre:</p>
+    <select id="selAlu" style="width:100%; padding:15px; margin-bottom:20px; border-radius:8px; border: 1px solid #ccc; font-size: 16px;"></select>
+    <button id="btnComenzar" class="btn-principal" onclick="empezar()">COMENZAR EXAMEN</button>
+  </div>
+
+  <!-- Paso 2: Render de Ejercicios -->
+  <div id="paso2" style="display:none;">
+    <div id="render"></div>
+    <button id="btnAyuda" class="btn-ayuda" onclick="abrirChatAyuda()" style="display:none; margin-top:15px;">
+      💬 ¿Necesitás ayuda? Preguntale al profe
+    </button>
+    <button id="btnSig" class="btn-principal" onclick="gestionarNavegacion()" disabled>SIGUIENTE</button>
+    <p id="progreso" style="text-align:center; color:#777; font-size: 0.85rem; margin-top: 15px;"></p>
+  </div>
+</div>
+
+<!-- Modal Resultado Final -->
+<div id="modalResultado" class="modal-overlay">
+  <div class="modal-content">
+    <div id="modalIcono" style="font-size:60px; margin-bottom:10px;"></div>
+    <div id="modalTitulo" style="font-size:22px; font-weight:bold;"></div>
+    <div id="modalMensaje" style="margin: 20px 0; font-size: 1.1rem; line-height: 1.4;"></div>
+    <button onclick="location.reload()" class="btn-principal">SALIR</button>
+  </div>
+</div>
+
+<!-- Modal del Chat con el Profe -->
+<div id="modalChat" class="modal-overlay" style="display:none;">
+  <div class="modal-content" style="max-width: 500px; text-align: left;">
+    <span class="close" onclick="cerrarChat()" style="float:right; cursor:pointer; font-size:24px;">&times;</span>
+    <h3 style="color:#1a73e8; margin-bottom:15px; text-align:center;">💬 Chat con el Profe</h3>
+    <div id="chatMensajes" style="max-height: 350px; overflow-y: auto; margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 8px; border: 1px solid #eee;">
+      <p style="color:#777; text-align:center;">Acá aparecerán los mensajes del chat...</p>
+    </div>
+    <textarea id="chatInput" placeholder="Escribí tu pregunta..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; min-height:60px; box-sizing:border-box;"></textarea>
+    
+    <!-- Botones de símbolos matemáticos -->
+    <div id="math-buttons">
+      <button type="button" class="btn-math" onclick="insertarSimbolo('raiz_cuadrada')">√</button>
+      <button type="button" class="btn-math" onclick="insertarSimbolo('raiz_enesima')">n√</button>
+      <button type="button" class="btn-math" onclick="insertarSimbolo('potencia')">x^n</button>
+      <button type="button" class="btn-math" onclick="insertarSimbolo('fraccion')">a/b</button>
+      <button type="button" class="btn-math" onclick="insertarSimbolo('parentesis')">( )</button>
+      <div class="math-row">
+        <button type="button" class="btn-math" onclick="insertarSimbolo('integral')">∫</button>
+        <button type="button" class="btn-math" onclick="insertarSimbolo('derivada')">f'</button>
+        <button type="button" class="btn-math" onclick="insertarSimbolo('limite')">lim</button>
+        <button type="button" class="btn-math" onclick="insertarSimbolo('infinito')">&infin;</button>
+        <button type="button" class="btn-math" onclick="insertarSimbolo('multiplicacion')">*</button>
+      </div>
+      <div class="math-row">
+        <button type="button" class="btn-math" onclick="insertarSimbolo('matriz')">[[ ]]</button>
+        <button type="button" class="btn-math" onclick="insertarSimbolo('sistema')">{ }</button>
+      </div>
+    </div>
+    <button onclick="enviarMensajeChat()" class="btn-principal" style="margin-top:10px; padding:10px;">Enviar</button>
+  </div>
+</div>
+
+<!-- INYECCIÓN SEGURA DEL ID DESDE EL SERVIDOR -->
+<script>
+  var idTemporal = "<?= typeof idTemporal !== 'undefined' ? idTemporal : (typeof id !== 'undefined' ? id : '') ?>";
+</script>
+
+<!-- RASTREADOR DE CAMBIO DE PESTAÑA Y PANTALLA DIVIDIDA (FOCUS/BLUR) -->
+<script>
+  window.contadorFugas = 0;
+  window.detalleFugas = [];
+  var tiempoSalida = null;
+
+  function registrarSalida() {
+    if (!tiempoSalida) {
+      window.contadorFugas++;
+      tiempoSalida = new Date();
+    }
+  }
+
+  function registrarRegreso() {
+    if (tiempoSalida) {
+      var tiempoFueraSeg = Math.round((new Date() - tiempoSalida) / 1000);
+      var horaSalida = tiempoSalida.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      if (tiempoFueraSeg >= 2) {
+        window.detalleFugas.push("Salió " + tiempoFueraSeg + " seg (a las " + horaSalida + ")");
+      } else {
+        window.contadorFugas--;
+      }
+      tiempoSalida = null;
+    }
+  }
+
+  document.addEventListener("visibilitychange", function() {
+    if (document.hidden) {
+      registrarSalida();
+    } else {
+      registrarRegreso();
+    }
+  });
+
+  window.addEventListener("blur", function() {
+    registrarSalida();
+  });
+
+  window.addEventListener("focus", function() {
+    registrarRegreso();
+  });
+
+  function obtenerReporteFugas() {
+    if (window.contadorFugas <= 0 || window.detalleFugas.length === 0) {
+      return "Sin salidas de pantalla";
+    }
+    return "Fugas: " + window.detalleFugas.length + " vez/veces | Detalle: " + window.detalleFugas.join(" | ");
+  }
+</script>
+
+<!-- INCLUSIÓN DE LOS ARCHIVOS JAVASCRIPT (EN ORDEN CORRECTO) -->
+<?!= HtmlService.createHtmlOutputFromFile('JS_Utilidades').getContent(); ?>
+<?!= HtmlService.createHtmlOutputFromFile('Especialista_VF').getContent(); ?>
+<?!= HtmlService.createHtmlOutputFromFile('Especialista_OM').getContent(); ?>
+<?!= HtmlService.createHtmlOutputFromFile('Especialista_CA').getContent(); ?>
+<?!= HtmlService.createHtmlOutputFromFile('Especialista_BALANZA').getContent(); ?>
+<?!= HtmlService.createHtmlOutputFromFile('Especialista_RM').getContent(); ?>
+<?!= HtmlService.createHtmlOutputFromFile('Especialista_VI').getContent(); ?>
+<?!= HtmlService.createHtmlOutputFromFile('Especialista_CV').getContent(); ?>
+<?!= HtmlService.createHtmlOutputFromFile('Especialista_EM').getContent(); ?>
+<?!= HtmlService.createHtmlOutputFromFile('Especialista_PC1').getContent(); ?>
+<?!= HtmlService.createHtmlOutputFromFile('Especialista_FR1').getContent(); ?>
+<?!= HtmlService.createHtmlOutputFromFile('Especialista_EXAMEN').getContent(); ?>
+
+<!-- Mantener al Render antes que a Logica, pr el orden de construccion de las tarjetas -->
+<?!= HtmlService.createHtmlOutputFromFile('JS_Render').getContent(); ?>
+<?!= HtmlService.createHtmlOutputFromFile('JS_Logica').getContent(); ?>
+
+<?!= HtmlService.createHtmlOutputFromFile('JS_TutorIA').getContent(); ?>
+<?!= HtmlService.createHtmlOutputFromFile('JS_Core').getContent(); ?>
+
+</body>
+</html>
