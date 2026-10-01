@@ -1,21 +1,27 @@
 <!-- JS_Core.html -->
 <script>
-  // --- JS_Core: Lógica Central de Orquestación y Envío ---
+  // --- JS_Core: Lógica Central de Orquestación y Envío (Desacoplado - API Rest) ---
 
-  // Declaración e higienización segura del ID de enlace
-  var idTemporal = typeof idTemporal !== 'undefined' ? idTemporal : "<?= id ?>";
+  // URL de tu API en Google Apps Script
+  const API_URL = "https://script.google.com/macros/s/AKfycbw8lIPEu2WbomHfjKngFSvpqBCSIZDd6OKbPv1tQ8e7lXqbKHULMFgHLKdhnqz4zfUo/exec";
 
-  try {
-    if (idTemporal && typeof idTemporal === 'string') {
-      while (idTemporal.includes('%')) { 
-        idTemporal = decodeURIComponent(idTemporal); 
+  // Captura el parámetro 'id' directamente desde la URL del navegador en GitHub Pages
+  function obtenerIdDesdeUrl() {
+    const urlParams = new URLSearchParams(window.location.search);
+    let id = urlParams.get('id') || "<?= id ?>";
+    try {
+      if (id && typeof id === 'string') {
+        while (id.includes('%')) { 
+          id = decodeURIComponent(id); 
+        }
       }
+    } catch (e) { 
+      console.error("Error decodificando ID:", e); 
     }
-  } catch (e) { 
-    console.error("Error decodificando ID:", e); 
+    return (id || "").trim();
   }
 
-  const ID_LINK = (idTemporal || "").trim();
+  const ID_LINK = obtenerIdDesdeUrl();
   const PARTES = ID_LINK.split("/");
 
   // Estado Global de la Aplicación
@@ -27,7 +33,7 @@
   window.archivoEnBase64 = null; 
 
   /**
-   * Carga inicial de metadatos y nómina de alumnos desde el servidor
+   * Carga inicial de metadatos y nómina de alumnos vía API REST
    */
   window.onload = () => {
     const elTitulo = document.getElementById('tituloTP');
@@ -43,8 +49,10 @@
       btnInicio.innerText = "CARGANDO DATOS...";
     }
 
-    google.script.run
-      .withSuccessHandler(res => {
+    // Petición a la API desacoplada
+    fetch(`${API_URL}?id=${encodeURIComponent(ID_LINK)}`)
+      .then(response => response.json())
+      .then(res => {
         if (!res) {
           if (btnInicio) btnInicio.innerText = "ERROR AL CARGAR";
           alert("No se recibieron datos del servidor.");
@@ -67,12 +75,11 @@
           }
         }
       })
-      .withFailureHandler(err => {
+      .catch(err => {
         console.error("Error en servidor:", err);
         if (btnInicio) btnInicio.innerText = "ERROR DE CONEXIÓN";
         alert("Error de conexión: " + (err.message || err));
-      })
-      .obtenerDatos(ID_LINK);
+      });
   };
 
   /**
@@ -146,7 +153,7 @@
   }
 
   /**
-   * Inicializa la sesión del alumno y recupera el cuestionario
+   * Inicializa la sesión del alumno y recupera el cuestionario vía API REST
    */
   function empezar() {
     const sel = document.getElementById('selAlu');
@@ -167,8 +174,10 @@
       btn.innerText = "OBTENIENDO EXAMEN...";
     }
 
-    google.script.run
-      .withSuccessHandler(function(datos) {
+    // Petición POST/GET a la API para traer preguntas del examen
+    fetch(`${API_URL}?id=${encodeURIComponent(ID_LINK)}&alumno=${encodeURIComponent(nombreAlumno)}`)
+      .then(response => response.json())
+      .then(datos => {
         try {
           if (datos && datos.pre && datos.pre.length > 0) {
             const examenPersonalizado = generarExamenUnico(datos.pre);
@@ -201,14 +210,13 @@
           alert("Error al armar el examen: " + err.message);
         }
       })
-      .withFailureHandler(function(err) {
+      .catch(err => {
         if (btn) {
           btn.disabled = false;
           btn.innerText = "COMENZAR EXAMEN";
         }
         alert("Error al cargar el examen: " + (err.message || err));
-      })
-      .obtenerDatos(ID_LINK, nombreAlumno);
+      });
   }
 
   /**
@@ -229,7 +237,6 @@
 
     const pregActual = PREGUNTAS_DB[indiceActual];
 
-    // Llama a la función de renderizado definida en JS_Render.html
     if (typeof renderizarContenido === 'function') {
       renderizarContenido();
     } else {
@@ -318,9 +325,6 @@
     return listaValores.length > 1 ? listaValores.join(',,,') : (listaValores[0] || "");
   }
 
-  /**
-   * Evalúa si un valor capturado representa una respuesta válida
-   */
   function esRespuestaValida(val) {
     if (val === null || val === undefined) return false;
     if (typeof val === 'string') return val.trim().length > 0;
@@ -336,9 +340,6 @@
     return false;
   }
 
-  /**
-   * Verifica interactividad visual en el DOM
-   */
   function verificarInteraccionDOM() {
     const render = document.getElementById('render');
     if (!render) return false;
@@ -359,17 +360,11 @@
     return false;
   }
 
-  /**
-   * Verifica si los especialistas registraron datos para la pregunta actual
-   */
   function obtenerEstadoEspecialista(pregActual) {
     if (!window.datosExamen) return null;
     return window.datosExamen[indiceActual] || (pregActual && window.datosExamen[pregActual.id]) || null;
   }
 
-  /**
-   * Determina si la pregunta activa ya fue finalizada por el especialista o en la UI
-   */
   function estaPreguntaCompletada(pregActual, ex) {
     if (ex) {
       if (ex.completado || ex.finalizado || ex.terminado) return true;
@@ -388,9 +383,6 @@
     return false;
   }
 
-  /**
-   * Administra la captura y progresión entre ejercicios.
-   */
   function gestionarNavegacion() {
     if (window.archivoEnBase64) {
       enviarConArchivo();
@@ -405,20 +397,17 @@
       const ex = obtenerEstadoEspecialista(pregActual);
       const yaCompletado = estaPreguntaCompletada(pregActual, ex);
 
-      // Si el ejercicio ya está completado/finalizado, permite avanzar directamente
       if (yaCompletado) {
         respuestasFinales[pregActual.id] = tieneRespuestaValida ? respuestaCapturada : "Completado";
         avanzarOSalir();
         return;
       }
 
-      // 1. Si no hay interacción ni opción elegida
       if (!tieneRespuestaValida && !tieneInteraccionDOM && (!ex || (!ex.respondido && (ex.intentosFallidos || 0) === 0))) {
         alert("⚠️ Tenés que responder o seleccionar una opción antes de continuar.");
         return;
       }
 
-      // 2. Bloqueo solo si el ejercicio sigue en curso y no se ha resuelto
       if (ex && !ex.completado) {
         const fallos = ex.intentosFallidos || 1;
         alert(`❌ La opción elegida no es correcta (Intento ${fallos}). Debés seleccionar la respuesta correcta para poder avanzar al siguiente ejercicio.`);
@@ -431,9 +420,6 @@
     avanzarOSalir();
   }
 
-  /**
-   * Avanza al siguiente ejercicio o dispara la entrega final
-   */
   function avanzarOSalir() {
     if (indiceActual < PREGUNTAS_DB.length - 1) {
       indiceActual++;
@@ -456,7 +442,7 @@
   }
 
   /**
-   * Envío final con Cálculo Proporcional de Nota y Errores
+   * Envío final vía POST JSON hacia la API
    */
   function enviarFinal() {
     const btn = document.getElementById('btnSig');
@@ -500,6 +486,7 @@
     var reporteFugasStr = typeof obtenerReporteFugas === 'function' ? obtenerReporteFugas() : "Sin salidas de pantalla";
 
     const payload = {
+      action: "procesarRespuestasFinales",
       datosAlumno: {
         nombre: selVal,
         tp: PARTES[0] || "1",
@@ -523,18 +510,18 @@
 
     finalizarModal(notaCalculada, estadoFinal, totalPasosExamen, totalErroresCometidos);
 
-    google.script.run
-      .withSuccessHandler(res => {
-        console.log("Servidor procesó la entrega:", res);
-      })
-      .withFailureHandler(err => {
-        console.error("Error al guardar entrega en el servidor:", err);
-      })
-      .procesarRespuestasFinales(payload);
+    fetch(API_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+    .then(() => console.log("Entrega enviada al servidor."))
+    .catch(err => console.error("Error al guardar entrega:", err));
   }
 
   /**
-   * Envío condicional cuando la pregunta requiere adjuntar un archivo/imagen en Drive
+   * Envío condicional de archivos adjuntos vía API
    */
   function enviarConArchivo() {
     const btn = document.getElementById('btnSig');
@@ -543,20 +530,33 @@
       btn.innerText = "Subiendo archivo...";
     }
     const selVal = document.getElementById('selAlu') ? document.getElementById('selAlu').value : "";
-    google.script.run
-      .withSuccessHandler(urlDrive => {
-        if (PREGUNTAS_DB[indiceActual]) {
-          respuestasFinales[PREGUNTAS_DB[indiceActual].id] = urlDrive;
-          puntosFinales[PREGUNTAS_DB[indiceActual].id] = 0;
-        }
-        avanzarOSalir();
-      })
-      .guardarArchivoDrive(window.archivoEnBase64, selVal, ID_LINK);
+    
+    const payload = {
+      action: "guardarArchivoDrive",
+      archivo: window.archivoEnBase64,
+      alumno: selVal,
+      idLink: ID_LINK
+    };
+
+    fetch(API_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+    .then(() => {
+      if (PREGUNTAS_DB[indiceActual]) {
+        respuestasFinales[PREGUNTAS_DB[indiceActual].id] = "Archivo Subido";
+        puntosFinales[PREGUNTAS_DB[indiceActual].id] = 0;
+      }
+      avanzarOSalir();
+    })
+    .catch(err => {
+      console.error("Error al subir archivo:", err);
+      avanzarOSalir();
+    });
   }
 
-  /**
-   * Despliega la ventana modal con la NOTA y ESTADO de aprobación real
-   */
   function finalizarModal(nota, estado, totalPasos, totalErrores) {
     var esAprobado = estado === "APROBADO";
     var colorEstado = esAprobado ? "#16a34a" : "#dc2626";
@@ -613,7 +613,7 @@
   }
 
   /**
-   * Envío de mensajes del Chat del Profe vía Apps Script
+   * Consulta al Tutor IA vía API REST
    */
   function enviarMensajeChat() {
     const inputMsg = document.getElementById('txtChatInput') || document.getElementById('inputMensajeChat') || document.querySelector('#modalChat textarea');
@@ -641,32 +641,43 @@
 
     const pregActual = PREGUNTAS_DB[indiceActual] || {};
 
-    google.script.run
-      .withSuccessHandler(respuesta => {
-        if (contenedorChat) {
-          contenedorChat.innerHTML += `
-            <div style="display: flex; justify-content: flex-start; margin-bottom: 8px;">
-              <div style="background-color: #f1f5f9; color: #1e293b; padding: 8px 12px; border-radius: 12px; max-width: 80%; font-size: 0.9rem;">
-                ${respuesta}
-              </div>
+    const payload = {
+      action: "consultarProfe",
+      mensaje: textoUsuario,
+      pregunta: pregActual
+    };
+
+    fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+      const respuesta = data.respuesta || "Sin respuesta del Tutor.";
+      if (contenedorChat) {
+        contenedorChat.innerHTML += `
+          <div style="display: flex; justify-content: flex-start; margin-bottom: 8px;">
+            <div style="background-color: #f1f5f9; color: #1e293b; padding: 8px 12px; border-radius: 12px; max-width: 80%; font-size: 0.9rem;">
+              ${respuesta}
             </div>
-          `;
-          contenedorChat.scrollTop = contenedorChat.scrollHeight;
-        }
-      })
-      .withFailureHandler(err => {
-        console.error("Error al consultar al Profe:", err);
-        if (contenedorChat) {
-          contenedorChat.innerHTML += `
-            <div style="display: flex; justify-content: flex-start; margin-bottom: 8px;">
-              <div style="background-color: #fee2e2; color: #991b1b; padding: 8px 12px; border-radius: 12px; max-width: 80%; font-size: 0.9rem;">
-                Ocurrió un error al consultar la ayuda. Por favor intentá nuevamente.
-              </div>
+          </div>
+        `;
+        contenedorChat.scrollTop = contenedorChat.scrollHeight;
+      }
+    })
+    .catch(err => {
+      console.error("Error al consultar al Profe:", err);
+      if (contenedorChat) {
+        contenedorChat.innerHTML += `
+          <div style="display: flex; justify-content: flex-start; margin-bottom: 8px;">
+            <div style="background-color: #fee2e2; color: #991b1b; padding: 8px 12px; border-radius: 12px; max-width: 80%; font-size: 0.9rem;">
+              Ocurrió un error al consultar la ayuda. Por favor intentá nuevamente.
             </div>
-          `;
-          contenedorChat.scrollTop = contenedorChat.scrollHeight;
-        }
-      })
-      .consultarProfe(textoUsuario, pregActual);
+          </div>
+        `;
+        contenedorChat.scrollTop = contenedorChat.scrollHeight;
+      }
+    });
   }
 </script>
