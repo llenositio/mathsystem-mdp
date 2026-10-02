@@ -1,5 +1,3 @@
-<!-- Especialista_VF.html -->
-<script>
   /**
    * Renderiza las subpreguntas de Verdadero / Falso mediante tarjetas interactivas.
    * @param {Object} pregunta - Objeto con { id, tipo, enunciado, subPreguntas: [{texto, correcta}] }
@@ -79,4 +77,3 @@
       btnF.classList.add('bg-rose-600', 'text-white');
     }
   }
-</script>
