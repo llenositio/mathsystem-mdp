@@ -1,4 +1,4 @@
-<script>
+
   // ==========================================
   // LÓGICA DE INTERACCIÓN, EVALUACIÓN Y ENVÍO
   // ==========================================
@@ -281,4 +281,3 @@
       validarInputsBALANZA();
     }
   }
-</script>
