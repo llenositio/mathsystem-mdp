@@ -1,6 +1,4 @@
-<script>
-
-  // Cuenta las veces que pediste ayuda en el ejercicio actual
+// Cuenta las veces que pediste ayuda en el ejercicio actual
   let consultasUsadas = 0; 
 // JS_Utilidades
   function normalizarMatematica(texto) {
@@ -66,4 +64,3 @@
     };
     reader.readAsDataURL(file);
   }
-</script>
