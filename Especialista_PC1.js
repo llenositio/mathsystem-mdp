@@ -1,5 +1,4 @@
-<!-- Especialista_PC1.html -->
-<script>
+
   /**
    * Renderiza el especialista de Plano Cartesiano Interactivo (PC1).
    */
@@ -131,4 +130,4 @@
     if (display) display.innerText = `(${coordX} ; ${coordY})`;
     if (inputOculto) inputOculto.value = formatoCoordenada;
   }
-</script>
+
