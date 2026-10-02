@@ -1,5 +1,4 @@
-<!-- Especialista_FR1.html -->
-<script>
+
   /**
    * Renderiza el especialista de Fracciones Interactivas (FR1).
    * @param {Object} pregunta - Objeto { id, tipo, enunciado, pasos: { mcm } }
@@ -71,4 +70,4 @@
       inputOculto.value = resVal;
     }
   }
-</script>
+
