@@ -1,5 +1,4 @@
-<!-- Especialista_Balanza.html -->
-<script>
+
   /**
    * Renderiza el especialista de Ecuaciones Interactivas con Balanza.
    * @param {Object} pregunta - Objeto { id, tipo, enunciado, pasosDisponibles, respuestasCorrectas }
@@ -85,4 +84,4 @@
       inputPaso.value = paso;
     }
   }
-</script>
+
