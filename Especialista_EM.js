@@ -1,5 +1,4 @@
-<!-- Especialista_EM.html -->
-<script>
+
   /**
    * Renderiza el especialista de Emparejamiento / Unir (EM).
    * @param {Object} pregunta - Objeto { id, tipo, enunciado, pares: [{llave, valor}], opciones: [] }
@@ -87,4 +86,4 @@
       inputOculto.value = selecciones.join(',,,');
     }
   }
-</script>
+
