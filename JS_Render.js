@@ -1,4 +1,3 @@
-<script>
   // ==========================================
   // ESTADO GLOBAL Y RENDERIZADO DE PREGUNTAS
   // ==========================================
@@ -332,4 +331,3 @@
     if (nom) window.nombreAlumnoSeleccionado = nom;
     return window.nombreAlumnoSeleccionado;
   }
-</script>
