@@ -1,5 +1,4 @@
-<!-- Especialista_CA.html -->
-<script>
+
   /**
    * Renderiza el especialista de Carga de Archivos (CA).
    * @param {Object} pregunta - Objeto { id, enunciado, imagen, video, tipo }
@@ -88,4 +87,4 @@
       if (inputOculto) inputOculto.value = "";
     }
   }
-</script>
+
