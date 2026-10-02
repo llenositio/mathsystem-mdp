@@ -1,5 +1,4 @@
-<!-- Especialista_RM.html -->
-<script>
+
   /**
    * Renderiza el especialista de Relación / Tarjetas (RM).
    * @param {Object} pregunta - Objeto { id, tipo, enunciado, opciones, respuestasCorrectas }
@@ -69,4 +68,3 @@
       inputOculto.value = valor;
     }
   }
-</script>
