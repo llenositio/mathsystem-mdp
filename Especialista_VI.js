@@ -1,5 +1,4 @@
-<!-- Especialista_VI.html -->
-<script>
+
   /**
    * Renderiza el especialista de Selección Visual / Imágenes (VI).
    * @param {Object} pregunta - Objeto { id, enunciado, imagen, opciones: [...] }
@@ -91,4 +90,4 @@
       inputOculto.value = urlSeleccionada;
     }
   }
-</script>
+
