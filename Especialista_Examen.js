@@ -1,32 +1,4 @@
-<style>
-  .examen-contenedor-opciones {
-    display: flex !important;
-    flex-direction: column !important;
-    width: 100% !important;
-    gap: 14px !important;
-    margin-top: 16px !important;
-  }
-  .examen-opcion-btn {
-    display: block !important;
-    width: 100% !important;
-    clear: both !important;
-    text-align: left !important;
-    white-space: normal !important;
-    word-break: break-word !important;
-    box-sizing: border-box !important;
-    font-size: 1.15rem !important;
-    line-height: 1.6 !important;
-    padding: 18px 22px !important;
-    border-width: 2px !important;
-    overflow-x: auto !important;
-  }
-  .examen-opcion-btn .mjx-chtml, 
-  #contenedor-examen-main .mjx-chtml {
-    font-size: 125% !important;
-  }
-</style>
 
-<script>
 /**
  * Separa opciones compuestas de derivadas (u' y v') en dos filas verticales
  */
@@ -291,4 +263,4 @@ function actualizarVistaExamen(indice) {
     if (el) MathJax.typesetPromise([el]).catch(err => console.warn(err));
   }
 }
-</script>
+
