@@ -1,5 +1,4 @@
-<!-- Especialista_CV.html -->
-<script>
+
   /**
    * Renderiza el especialista de Selección Múltiple / Checklist (CV).
    * @param {Object} pregunta - Objeto { id, tipo, enunciado, opciones }
@@ -61,4 +60,3 @@
       inputOculto.value = seleccionados.join(',,,');
     }
   }
-</script>
