@@ -1,4 +1,4 @@
-<script>
+
   function abrirChatAyuda() {
     if (consultasUsadas >= 3) {
       alert("⛔ Ya usaste las 3 ayudas para este ejercicio. ¡Seguí intentando solo!");
@@ -143,4 +143,4 @@
     contenedor.appendChild(div);
     contenedor.scrollTop = contenedor.scrollHeight;
   }
-</script>
+
