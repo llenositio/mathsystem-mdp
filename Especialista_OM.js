@@ -1,5 +1,4 @@
-<!-- Especialista_OM.html -->
-<script>
+
   /**
    * Renderiza el especialista de Opción Múltiple (OM) mediante tarjetas interactivas.
    * @param {Object} pregunta - Objeto de la pregunta con enunciado y opciones.
@@ -49,4 +48,4 @@
       }
     }
   }
-</script>
+
